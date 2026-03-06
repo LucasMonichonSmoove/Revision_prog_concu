@@ -1,4 +1,4 @@
-.# Revision_prog_concu
+# Revision_prog_concu
 
 - TP corrigés et fonctionnels jusqu'au TP10
 - PDF Synthèse type fiche partiel pour chaque TP
