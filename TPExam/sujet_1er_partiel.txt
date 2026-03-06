@@ -1,0 +1,744 @@
+1)Écrivez la commande bash correspondante au code suivant: 
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+int main(void)
+{
+    int fd = open("/dev/null", O_WRONLY|O_TRUNC);
+    dup2(fd,2);
+    close(fd);
+    int fd2 = open("output", O_WRONLY|O_CREAT|O_TRUNC,0666);
+    dup2(fd2,1);
+    close(fd2);
+    execlp("ls","ls","-lR","/proc",NULL);
+    return 0;
+}
+
+ls -lR /proc > output 2> /dev/null
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+2)La gestion d'une base de données utilise le principe de lecteur/rédacteur. 
+Sélectionnez la ou les bonnes affirmations Lecteur/rédacteur actif signifie qu'il est en train d'accéder à la base de données en lecture/écriture. 
+Veuillez choisir au moins une réponse. 
+
+a. Lorsque l'on donne la priorité aux rédacteurs, plusieurs rédacteurs peuvent accéder à la base de données en même temps. 
+b. Lorsque l'on donne une priorité identique, les lecteurs restent tout de même plus prioritaire que les rédacteurs. 
+c. Lorsque l'on donne la priorité aux rédacteurs. Si on a un rédacteur actif et que l'on lance un lecteur puis un rédacteur, alors le second rédacteur s'exécutera avant le lecteur. 
+d. Un seul rédacteur peut accéder à la base de données à la fois. 
+e. Plusieurs lecteurs peuvent accéder à la base de données en même temps sans problème 
+f. Lorsque l'on donne la priorité égale. Si un lecteur est actif et que l'on lance un rédacteur puis un lecteur, alors le second lecteur s'exécutera avant le rédacteur. 
+g. Lorsque l'on donne la priorité aux rédacteurs. Si un lecteur est actif et que l'on lance un rédacteur puis un lecteur, alors le second lecteur s'exécutera avant le rédacteur. 
+
+Explications :
+a.❌ Faux : Lorsque la priorité est donnée aux rédacteurs, cela signifie qu'un rédacteur peut être priorisé par rapport aux lecteurs, mais plusieurs rédacteurs ne peuvent pas écrire en même temps, sinon il y aurait un risque d’incohérence des données.
+b.❌ Faux : Si on donne une priorité égale, cela signifie que les demandes sont traitées de manière équitable, mais pas forcément que les lecteurs seront toujours plus prioritaires que les rédacteurs.
+c.✅ Vrai : Lorsqu'un rédacteur a la priorité, si un rédacteur est actif et qu'un lecteur arrive suivi d'un autre rédacteur, le second rédacteur est exécuté avant le lecteur.
+d.✅ Vrai : Un seul rédacteur peut écrire à la fois pour éviter les incohérences dans la base de données.
+e.✅ Vrai : Plusieurs lecteurs peuvent lire simultanément sans problème, car la lecture n'affecte pas l'intégrité des données.
+f.✅ Vrai : Si la priorité est égale et qu'un lecteur est actif, un second lecteur pourra accéder avant un rédacteur qui attend.
+g.❌ Faux : Si on donne la priorité aux rédacteurs, alors un rédacteur en attente aura la priorité sur un lecteur qui arrive après.
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+3)Quelles sont les vraies affirmations ? 
+import multiprocessing as mp
+def fonction(id,iter,tab, array):
+    somme = 0
+    for i in range(id,iter,2):
+        somme += tab[i]
+    array[id] = somme
+if __name__ == "__main__":
+    size = 40
+    tab = [val for val in range(size)]
+    array = mp.Array('i',2)
+    process = mp.Process(target=fonction,args=(0,size,tab,array,))
+    process2 = mp.Process(target=fonction,args=(1,size,tab,array,))
+    process.start()
+    process2.start()
+    process.join()
+    process2.join()
+    print("1:",array[0],end=" ")
+    print("2:",array[1])
+
+
+Veuillez choisir au moins une réponse. 
+a. array est partagé entre les process sans être protégé par un mutex et donc le programme ne fonctionne pas 
+b. array[0] contient la somme des nombres d'indice pairs de tab 
+c. array[0] contient la somme des nombres pairs jusqu'à 40 
+d. array[1] contient la somme des 20 derniers nombres de tab 
+e. array[1] contient la somme des nombres d'indice impairs de tab 
+f. array[0] contient la somme des 20 premiers nombres de tab 
+g. array[1] contient la somme des nombres impairs jusqu'à 40 
+h. tab n'est pas partagé entre les process et donc le programme ne fonctionne pas 
+i. array[0] et array[1] contiennent la même valeur 
+j. Le programme affiche "1: 380 2: 400" 
+
+Les bonnes réponses sont :
+
+✅ b. array[0] contient la somme des nombres d'indices pairs de tab.
+
+Le premier processus (id=0) traite les indices pairs (0, 2, 4, ...), donc il additionne les valeurs correspondantes de tab.
+✅ e. array[1] contient la somme des nombres d'indices impairs de tab.
+
+Le second processus (id=1) traite les indices impairs (1, 3, 5, ...), donc il additionne les valeurs correspondantes de tab.
+✅ j. Le programme affiche "1: 380 2: 400".
+
+Somme des indices pairs : 0 + 2 + 4 + ... + 38 = 380.
+Somme des indices impairs : 1 + 3 + 5 + ... + 39 = 400.
+Explications des fausses réponses :
+❌ a. array est partagé entre les processus sans être protégé par un mutex, 
+mais ici ce n'est pas un problème car chaque processus écrit dans une case différente de array. Le programme fonctionne correctement.
+❌ c. Faux : array[0] contient la somme des nombres d'indices pairs, pas des nombres pairs eux-mêmes.
+❌ d. Faux : array[1] ne contient pas la somme des 20 derniers nombres, mais la somme des valeurs d'indices impairs.
+❌ f. Faux : array[0] ne contient pas la somme des 20 premiers nombres, mais la somme des indices pairs.
+❌ g. Faux : array[1] contient la somme des nombres d'indices impairs, ce qui est différent de la somme des nombres impairs jusqu'à 40.
+❌ h. Faux : tab est bien accessible aux processus car il est passé comme argument à chaque processus.
+❌ i. Faux : array[0] et array[1] ne contiennent pas la même valeur, array[0] = 380 et array[1] = 400.
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+4)Il est impossible de stocker un tableau de la structure suivante dans un segment de mémoire partagée. 
+struct data{ int id; float sum; float avg; int nb_success; }; Veuillez choisir une réponse. 
+1. VRAI 
+2. FAUX ✅
+
+
+Un tableau de cette structure peut être alloué dans un segment de mémoire partagée, 
+chaque processus pouvant y accéder en attachant la mémoire partagée à son espace d’adressage.
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+5)Le fait d'utiliser IPC_CREAT en conjonction avec IPC_EXCL permet de réinitialiser le semaphore/la section de mémoire partagée 
+au moment de sa création. Veuillez choisir une réponse. 
+1. VRAI 
+2. FAUX ✅
+
+FAUX
+
+Explication :
+L'utilisation de IPC_CREAT | IPC_EXCL avec shmget (pour la mémoire partagée) ou semget (pour les sémaphores) ne réinitialise pas une ressource IPC existante, mais empêche simplement sa recréation si elle existe déjà.
+
+IPC_CREAT : Crée un nouvel objet IPC (mémoire partagée, sémaphore, etc.) s'il n'existe pas encore.
+IPC_EXCL : Utilisé avec IPC_CREAT, il force l'échec si la ressource existe déjà.
+Si la ressource existe déjà, shmget() ou semget() retournera une erreur (EEXIST) au lieu de la réinitialiser.
+
+Cas pratique :
+Si vous voulez forcer une réinitialisation, vous devez :
+
+Supprimer la ressource existante avec shmctl(shmid, IPC_RMID, NULL); ou semctl(semid, 0, IPC_RMID);
+Recréer la ressource proprement.
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+Le code suivant: prod_consor.tar.gz présente un souci. Il devrait afficher abdefghijklmnopqrstuvwxyz mais il affiche autre chose.
+Le code est découpé en 3 exécutables:
+prod (prod.c) qui produit des données dans une mémoire partagée.
+conso (conso.c) qui consomme des données depuis une mémoire partagée et les affiche.
+launcher (launcher.c) s'occupe de lancer prod et conso en créant les ressources utilisées par prod et conso.
+Certaines variables communes sont définies dans commun.h afin de simplifier l'écriture et l'usage des différentes informations partagées entre les programmes.
+ 
+Après avoir compilé, il vous suffit d'exécuter launcher pour vous rendre compte du problème.
+ 
+Consignes:
+Corrigez le ou les bugs qui empêche-nt d'avoir le résultat escompté.
+Voici les codes du projet :
+
+
+
+
+prod.c :
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+int main () {
+     int sem_prod = sem_create (CLE_SEM_PROD ,SEM);
+     int sem_conso = sem_create (CLE_SEM_CONSO ,0);
+     int shmid = shmget(CLE_MEM,MEM*sizeof(int),0644);
+     int* shmem = shmat(shmid,NULL,0);
+     for (int i = 0; i < 26; i++)
+     {
+         P(sem_prod);
+         shmem[i%MEM] = 'a'+i;
+         V(sem_conso);
+     }
+     shmdt(shmem);
+     return 0;
+}
+
+
+Makefile :
+
+
+CFLAGS=-Wall -Wextra -g
+OBJS=prod.o conso.o dijkstra.o launcher.o
+all: conso prod launcher
+
+
+prod: prod.o dijkstra.o
+conso: conso.o dijkstra.o
+launcher: launcher.o dijkstra.o
+
+
+conso.o: conso.c dijkstra.h commun.h
+prod.o: prod.c dijkstra.h commun.h
+launcher.o: launcher.c dijkstra.h commun.h
+dijkstra.o: dijkstra.c dijkstra.h
+
+
+.PHONY: clean
+clean:
+        rm $(OBJS) conso prod launcher
+
+
+launcher.c :
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#include <string.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+int main () {
+    int sem_prod = sem_create (CLE_SEM_PROD ,SEM);
+    int sem_conso = sem_create (CLE_SEM_CONSO ,0);
+    int shmid = shmget(CLE_MEM,MEM*sizeof(int),IPC_CREAT|IPC_EXCL|0644);
+    if (shmid == -1)
+        shmid = shmget(CLE_MEM,MEM*sizeof(int),0644);
+    int* shmem = shmat(shmid,NULL,0);
+    memset(shmem,0,MEM*sizeof(int));
+    if (fork() == 0)
+    {
+        puts("consommateur");
+        execlp("./conso","./conso",NULL);
+    }
+    if (fork() == 0)
+    {
+        puts("producteur");
+        sleep(3);
+        execlp("./prod","./prod",NULL);
+    }
+    wait(NULL);
+    wait(NULL);
+    shmdt(shmem);
+    shmctl(shmid,IPC_RMID,NULL);
+    sem_delete(sem_prod);
+    sem_delete(sem_conso);
+    return 0;
+}
+
+
+dijkstra.h :
+#ifndef DIJKSTRA_H
+#define DIJKSTRA_H
+
+
+#include <sys/sem.h>
+
+
+/**
+ * return the semaphore associated to the key cle
+ * if the semaphore doesn't already exist the function create it with initval token then return it
+ */
+int sem_create(key_t cle, int initval);
+
+
+/**
+ * take a token on the semaphore semid or wait if none available
+ */
+void P(int semid);
+
+
+/**
+ * put a token on the semaphore semid
+ */
+void V(int semid);
+
+
+/**
+ * delete the semaphore semid
+ */
+void sem_delete(int semid);
+
+
+#endif
+
+
+dijkstra.c :
+#include <sys/sem.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+#include "dijkstra.h"
+
+
+int sem_create(key_t cle, int initval) {
+        int semid;
+        union semun { int val; struct semid_ds *buf; ushort *array; } arg_ctl;
+
+
+        semid = semget(cle, 1 , IPC_CREAT|IPC_EXCL|0666);
+        if (semid == -1)
+        {
+                semid = semget(cle,1, 0666);
+                if (semid == -1)
+                {
+                        perror("Erreur semget()");
+                        exit(1);
+                }
+        }
+        else
+        {
+                arg_ctl.val = initval;
+                if (semctl(semid, 0, SETVAL, arg_ctl) == -1)
+                {
+                        perror("Erreur initialisation sémaphore");
+                        exit(1);
+                }
+        }
+        return(semid) ;
+}
+
+
+void P(int semid)
+{
+        struct sembuf sempar;
+        sempar.sem_num = 0;
+        sempar.sem_op = -1;
+        sempar.sem_flg = 0;
+        if (semop(semid, &sempar, 1) == -1)
+                perror("Erreur operation P");
+}
+
+
+void V(int semid)
+{
+        struct sembuf sempar;
+        sempar.sem_num = 0;
+        sempar.sem_op = 1;
+        sempar.sem_flg = 0;
+        if (semop(semid, &sempar, 1) == -1)
+                perror("Erreur opération V");
+}
+
+
+void sem_delete(int semid)
+{
+        if (semctl(semid,0,IPC_RMID,0) == -1)
+                perror("Erreur dans destruction sémaphore");
+}
+
+
+conso.c :
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+int main () {
+     int sem_prod = sem_create (CLE_SEM_PROD ,SEM);
+     int sem_conso = sem_create (CLE_SEM_CONSO ,0);
+     int shmid = shmget(CLE_MEM,MEM*sizeof(int),0644);
+     int* shmem = shmat(shmid,NULL,0);
+     for (int i = 0; i < 26; i++)
+     {
+         P(sem_conso);
+         char c = shmem[i%MEM];
+         V(sem_prod);
+         printf("%c",c);
+     }
+     printf("\n");
+     shmdt(shmem);
+     return 0;
+}
+
+
+commun.h :
+
+
+#ifndef COMMUN_H
+#define COMMUN_H
+
+
+#define MEM 3
+#define SEM 5
+
+
+#define CLE_SEM_PROD 100
+#define CLE_SEM_CONSO 200
+#define CLE_MEM 100
+
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+
+
+Sans toucher aux fonctions t1,t2,t3 et t4. Faîtes en sorte que l'enchaînement des fonctions correspondent au schéma suivant:
+Le processus 2 (p2) attend que T1 soit finie.
+Le processus 3 (p3) attend que T2 et T3 soient finies.
+Le programme launcher s'occupera d'initialiser les ressources nécessaires et de les libérer. Il s'occupe de lancer les 3 processus et de les attendre.
+Certaines variables communes peuvent être définies dans commun.h afin de simplifier l'écriture et l'usage des différentes informations partagées entre les programmes.
+Après avoir compilé, il vous suffit d'exécuter launcher.
+Voici les codes :
+
+
+commun.h :
+#ifndef COMMUN_H
+#define COMMUN_H
+
+
+#endif
+
+
+
+
+
+
+
+
+dijkstra.c :
+#include <sys/sem.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+#include "dijkstra.h"
+
+
+int sem_create(key_t cle, int initval) {
+        int semid;
+        union semun { int val; struct semid_ds *buf; ushort *array; } arg_ctl;
+
+
+        semid = semget(cle, 1 , IPC_CREAT|IPC_EXCL|0666);
+        if (semid == -1)
+        {
+                semid = semget(cle,1, 0666);
+                if (semid == -1)
+                {
+                        perror("Erreur semget()");
+                        exit(1);
+                }
+        }
+        else
+        {
+                arg_ctl.val = initval;
+                if (semctl(semid, 0, SETVAL, arg_ctl) == -1)
+                {
+                        perror("Erreur initialisation sémaphore");
+                        exit(1);
+                }
+        }
+        return(semid) ;
+}
+
+
+void P(int semid)
+{
+        struct sembuf sempar;
+        sempar.sem_num = 0;
+        sempar.sem_op = -1;
+        sempar.sem_flg = 0;
+        if (semop(semid, &sempar, 1) == -1)
+                perror("Erreur operation P");
+}
+
+
+void V(int semid)
+{
+        struct sembuf sempar;
+        sempar.sem_num = 0;
+        sempar.sem_op = 1;
+        sempar.sem_flg = 0;
+        if (semop(semid, &sempar, 1) == -1)
+                perror("Erreur opération V");
+}
+
+
+void sem_delete(int semid)
+{
+        if (semctl(semid,0,IPC_RMID,0) == -1)
+                perror("Erreur dans destruction sémaphore");
+}
+
+
+
+
+dijkstra.h :
+
+
+#ifndef DIJKSTRA_H
+#define DIJKSTRA_H
+
+
+#include <sys/sem.h>
+
+
+/**
+ * return the semaphore associated to the key cle
+ * if the semaphore doesn't already exist the function create it with initval token then return it
+ */
+int sem_create(key_t cle, int initval);
+
+
+/**
+ * take a token on the semaphore semid or wait if none available
+ */
+void P(int semid);
+
+
+/**
+ * put a token on the semaphore semid
+ */
+void V(int semid);
+
+
+/**
+ * delete the semaphore semid
+ */
+void sem_delete(int semid);
+
+
+#endif
+
+
+launcher.c :
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+#include <string.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+int main () {
+    if (fork() == 0)
+    {
+        execlp("./p1","./p2",NULL);
+    }
+    if (fork() == 0)
+    {
+        execlp("./p2","./p2",NULL);
+    }
+    if (fork() == 0)
+    {
+        execlp("./p3","./p3",NULL);
+    }
+    wait(NULL);
+    wait(NULL);
+    wait(NULL);
+    return 0;
+}
+
+
+
+
+Makefile :
+CFLAGS=-Wall -Wextra -g
+OBJS=p1.o p2.o p3.o dijkstra.o launcher.o
+all: p1 p2 p3 launcher
+
+
+p1: p1.o dijkstra.o
+p2: p2.o dijkstra.o
+p3: p3.o dijkstra.o
+launcher: launcher.o dijkstra.o
+
+
+p1.o: p1.c dijkstra.h commun.h
+p2.o: p2.c dijkstra.h commun.h
+p3.o: p3.c dijkstra.h commun.h
+launcher.o: launcher.c dijkstra.h commun.h
+dijkstra.o: dijkstra.c dijkstra.h
+
+
+.PHONY: clean
+clean:
+        rm $(OBJS) p1 p2 p3 launcher
+
+
+
+
+p1.c :
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+void t1()
+{
+    puts("t1");
+    sleep(10);
+    puts("end t1");
+}
+
+
+void t2()
+{
+    puts("t2");
+    sleep(2);
+    puts("end t2");
+}
+
+
+int main () {
+    t1();
+    t2();
+    return 0;
+}
+
+
+
+
+
+
+p2.c :
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+void t3()
+{
+    puts("t3");
+    sleep(7);
+    puts("end t3");
+}
+
+
+int main () {
+    t3();
+    return 0;
+}
+
+
+
+
+p3.c :
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/shm.h>
+#include "dijkstra.h"
+#include "commun.h"
+
+
+void t4()
+{
+    puts("t4");
+    sleep(5);
+    puts("end t4");
+}
+
+
+int main () {
+    t4();
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+
+
+QUESTION 9
+
+
+Écrivez un programme alarme.c dont le fonctionnement est le suivant:
+- Le processus crée un fils
+- Le processus fils affiche toutes les secondes un message jusqu'à ce qu'il reçoive le signal SIGUSR1. Après réception du signal, il se termine normalement.
+- Le processus père lorsqu'il reçoit le signal SIGALARM envoie un signal SIGUSR1 à son fils.
+- Le processus père attend 10 secondes avant de recevoir le signal SIGALARM. Pour cette attente, vous utiliserez la fonction pause() (man 2 pause).
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+QUESTION 10 
+Écrivez un programme pipeline qui correspond à l'enchaînement des commandes suivantes:
+ 
+grep "invalid credentials" < server.log | cut -d, -f3 | sort > sortie
+Vous avez à votre disposition le fichier serveur.log pour réaliser cela.

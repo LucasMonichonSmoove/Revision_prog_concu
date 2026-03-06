@@ -1,0 +1,591 @@
+1)Qu'affiche le programme suivant et pourquoi?
+int main(void)
+{
+    execlp("echo","echo","Bonjour");
+    puts("le monde");
+    return 0;
+}
+ 
+
+Affichage du programme:
+Bonjour
+➡️ La ligne "le monde" n'est jamais affichée !
+
+
+Explication technique
+execlp() remplace complètement le processus en chargeant un nouveau programme en mémoire.
+Il ne revient pas au code après l'appel.
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+2)Pourquoi le programme suivant affiche-t-il "Message in the bottle" à l'écran au lieu de l'écrire dans le fichier?
+int main(void)
+{
+    int fd = open("file",O_CREAT|O_RDWR|O_TRUNC,0644);
+    dup2(1,fd);
+    close(fd);
+    puts("Message in the bottle");
+    return 0;
+}
+ 
+Veuillez choisir au moins une réponse.
+ 
+a. car le fichier a été fermé par close(fd)
+b. car le fichier n'existe pas
+c. car l'appel à dup2 devrait être dup2(fd,1)
+d. car l'appel à dup2 devrait être dup2(fd,0) 
+e. car le fichier est en lecture seul
+ 
+✅ c. car l'appel à dup2 devrait être dup2(fd, 1);
+
+L'erreur est que dup2(1, fd); ne redirige pas stdout vers file, mais fait l'inverse.
+
+❌ a. car le fichier a été fermé par close(fd)
+
+close(fd); ferme le descripteur fd, mais si la redirection dup2(fd, 1); était correcte, stdout pointerait déjà vers fd, donc ça n'aurait pas posé problème.
+Ici, le problème est dup2(1, fd); et non close(fd);.
+❌ b. car le fichier n'existe pas
+
+Faux, car open("file", O_CREAT | O_RDWR | O_TRUNC, 0644); crée le fichier s'il n'existe pas.
+❌ d. car l'appel à dup2 devrait être dup2(fd, 0);
+
+dup2(fd, 0); redirigerait stdin (entrée standard) vers file, mais ici, on veut rediriger stdout (1), pas stdin.
+❌ e. car le fichier est en lecture seule
+
+Faux, car open("file", O_CREAT | O_RDWR | O_TRUNC, 0644); ouvre le fichier en lecture et écriture (O_RDWR), donc on peut écrire dedans.
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+3)Que fait la fonction exit lorsqu'elle est utilisée dans un thread?
+ Veuillez choisir une réponse.
+ 
+a. Elle termine la fonction
+b. Elle Termine le processus ✅
+c. Elle termine le thread
+d. Elle ne fait rien
+ 
+
+Comportement de exit() dans un programme multithread
+Si un thread appelle exit(), cela :
+
+Termine immédiatement le processus entier, y compris tous les threads.
+Ferme les fichiers ouverts et libère les ressources.
+Retourne le code de sortie (status) au système d'exploitation.
+💡 En gros, exit() tue tout le programme, pas seulement le thread qui l'appelle.
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+4)Un Processus zombie est un processus qui
+ Veuillez choisir une réponse.
+ 
+a. ayant tué son processus père
+b. ayant écrit dans un tube fermé en lecture
+c. dont le père est terminé par un exit 
+d. dont le père n'a pas encore exécuté wait✅
+ 
+❌ a. ayant tué son processus père
+
+Faux, car un processus zombie concerne un fils terminé, pas un père tué.
+Si un fils tue son père, il devient orphelin, pas zombie.
+❌ b. ayant écrit dans un tube fermé en lecture
+
+Faux, cela provoque un signal SIGPIPE, mais ne crée pas de zombie.
+❌ c. dont le père est terminé par un exit
+
+Faux, si le père meurt avant d’appeler wait(), le fils devient orphelin, pas zombie.
+Dans ce cas, init (PID 1) récupère le fils et appelle wait() automatiquement pour l’éliminer.
+
+✅ Conclusion
+Un processus zombie est un processus fils terminé mais dont le père n'a pas encore appelé wait().
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+5)Que retourne les appels systèmes lorsqu'il y a une erreur?
+
+Explication détaillée
+Retour de -1
+
+La plupart des appels système retournent -1 en cas d’échec.
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+6)Quelle est la fonction à utiliser pour qu'un processus puisse récupérer le code de retour de son processus fils qui vient de se terminer ?
+
+Lorsqu'un processus père crée un processus fils avec fork(), 
+il peut attendre sa terminaison et récupérer son code de retour en utilisant wait() ou waitpid().
+
+📌 Explication :
+
+wait(&status); bloque le père jusqu'à ce qu'un fils se termine.
+WIFEXITED(status) vérifie si le fils a terminé normalement.
+WEXITSTATUS(status) extrait le code de retour du fils (ex: exit(42) donne 42).
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+7)Qu'affiche le programme suivant?
+ 
+int main(void)
+{
+    int tube[2];
+    pid_t pid = fork();
+    pipe(tube);
+    if (pid != 0)
+    {
+        close(tube[0]);
+        int value = 5;
+        write(tube[1],&value,sizeof(int));
+        close(tube[1]);
+        puts("done");
+    }
+    else
+    {
+        close(tube[1]);
+        int value = 0;
+        read(tube[0],&value,sizeof(int));
+        close(tube[0]);
+        printf("value=%d\n",value);
+    }
+    return 0;
+}
+ 
+🛠 Explication de l'exécution
+Création du tube avec pipe(tube);
+
+tube[0] = Extrémité lecture
+tube[1] = Extrémité écriture
+Le processus est dupliqué avec fork()
+
+Deux processus exécutent le même code.
+Problème ici : pipe(tube); est après fork();
+
+🔴fork() est appelé avant pipe(), donc le tube n'est pas correctement partagé entre le père et le fils.
+Chaque processus a son propre tube indépendant → le fils ne reçoit pas les données envoyées par le père.
+🔴 Résultat probable :
+Le père écrit "done", mais le fils ne reçoit rien, donc value = 0 (par défaut).
+
+done
+value=0
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+8)Justifiez (Sans justification ou Si la justification est fausse, la réponse à la question du dessus même juste vaudra 0)
+
+🔴fork() est appelé avant pipe(), donc le tube n'est pas correctement partagé entre le père et le fils.
+Chaque processus a son propre tube indépendant → le fils ne reçoit pas les données envoyées par le père.
+🔴 Résultat probable :
+Le père écrit "done", mais le fils ne reçoit rien, donc value = 0 (par défaut).
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+9)Quel(s) est(sont) les affichages possibles de ce programme?
+#include "dijkstra.h"
+int main () {
+     int sem1 = sem_create (100 ,0) ;
+     int sem2 = sem_create (200 ,0) ;
+     if( fork () ==0) {
+          P( sem1 );
+          printf ("un ");
+          V( sem2 );
+          sem_delete(sem1);
+          sem_delete(sem2);
+          exit (0) ;
+     }
+     if( fork () ==0) {
+          P( sem2 );
+          printf ("deux ");
+          V( sem1 );
+          exit (0) ;
+     }
+     sleep (1) ;
+     V( sem2 );
+     return 0;
+}
+ 
+Veuillez choisir au moins une réponse.
+ 
+a. un
+b. deux un ✅
+c. Aucun affichage
+d. un deux 
+e. deux
+ 
+
+📌 Réponses possibles
+✅ b. "deux un"
+
+🚫 Réponses fausses :
+
+❌ a. "un" → Impossible, car "deux" s'affiche en premier.
+❌ c. Aucun affichage → Faux, car "deux un" s'affiche toujours.
+❌ d. "un deux" → Impossible, car "un" ne peut s'afficher avant "deux" (bloqué par P(sem1)).
+❌ e. "deux" → Faux, car "un" s'affiche toujours après "deux".
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+10)Sachant que l'on lance les deux programmes suivants de la façon suivante: ./prod& ./conso.
+ 
+Peut on dire que l'exécution de ces programmes est déterministe ?
+•        Si oui, quelle est la sortie ?
+•        Si non, pourquoi ?
+ 
+//prod.c
+#include "dijkstra.h"
+#define MEM 3
+#define SEM 5
+int main () {
+     int sem1 = sem_create (100 ,SEM);
+     int sem2 = sem_create (200 ,0);
+     int shmid = shmget(300,MEM*sizeof(int),IPC_CREAT|IPC_EXCL|0644);
+     if (shmid == -1)
+        shmid = shmget(300,MEM*sizeof(int),0644);
+     int* shmem = shmat(shmid,NULL,0);
+     for (int i = 0; i < 26; i++)
+     {
+         P(sem1);
+         shmem[i%MEM] = 'a'+i;
+         V(sem2);
+     }
+     shmdt(shmem);
+     return 0;
+}
+ 
+//conso.c
+#include "dijkstra.h"
+#define MEM 3
+#define SEM 5
+int main () {
+     int sem1 = sem_create (100 ,SEM);
+     int sem2 = sem_create (200 ,0);
+     int shmid = shmget(300,MEM*sizeof(int),IPC_CREAT|IPC_EXCL|0644);
+     if (shmid == -1)
+        shmid = shmget(300,MEM*sizeof(int),0644);
+     int* shmem = shmat(shmid,NULL,0);
+     for (int i = 0; i < 26; i++)
+     {
+         P(sem2);
+         char c = shmem[i%MEM];
+         V(sem1);
+         printf("%c",c);
+     }
+     printf("\n");
+     shmdt(shmem);
+     shmctl(shmid,IPC_RMID,NULL);
+     sem_delete(sem1);
+     sem_delete(sem2);
+     return 0;
+}
+ 
+
+📌 Pourquoi l'exécution n'est pas déterministe ? (Explication simple)
+Un programme est déterministe si on obtient toujours exactement le même résultat, peu importe l’exécution.
+
+Ici, le producteur (prod) et le consommateur (conso) tournent en parallèle, et c’est le système d’exploitation qui décide quand chaque processus s’exécute.
+
+Comme prod et conso ne sont pas parfaitement synchronisés sur l'affichage, l’ordre exact des affichages peut varier.
+
+Le printf() est bufferisé → il n'affiche pas immédiatement les caractères.
+
+SEM=5 et MEM=3 donc comme shmem[i%MEM] est un buffer circulaire, il peut écraser les lettres qu'il a écrit avant que conso les lise donc
+le résultat peut varier.
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+
+11)Qu'affiche ce programme?
+void* calcul_thread(void* arg)
+{
+    int* somme = arg;
+    for(int i = 0; i < 10000; i++)
+    {
+        *somme += 1;
+    }
+    return NULL;
+}
+int main(void)
+{
+    int somme = 0;
+    pthread_t threads[10];
+    for(int i = 0; i < 10; i++)
+    {
+        pthread_create(&threads[i], NULL,calcul_thread,&somme);
+    }
+    for(int i = 0; i < 10; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+    printf("Resultat %d\n",somme);
+    return 0;
+}
+ 
+Veuillez choisir au moins une réponse. 
+a. Resultat 0
+b. Impossible de savoir le résultat
+c. Resultat 100000
+d. Resultat 10000
+ 
+
+
+📌 Résultat du programme
+❌ a. Resultat 0 → Faux
+somme est toujours incrémenté, donc le résultat ne peut pas être 0.
+
+✅ b. Impossible de savoir le résultat → Vrai
+Le programme modifie somme depuis plusieurs threads en même temps, mais sans synchronisation (mutex, atomic, etc.).
+Il peut être inférieur à 100 000 à cause des écrasements d'incréments.
+
+❌ c. Resultat 100000 → Faux (très improbable)
+Pour obtenir exactement 100000, il faudrait qu'aucun incrément ne soit perdu, ce qui est quasi impossible sans synchronisation.
+
+❌ d. Resultat 10000 → Faux
+Même avec des pertes, la somme sera bien plus grande que 10000, car 10 threads font chacun 10 000 incréments.
+
+
+
+=============================================================================
+=============================================================================
+=============================================================================
+
+
+
+12) Le programme sepia.c présent dans l'archive sepia.tar.gz à Télécharger est actuellement un programme mono-thread qui transforme le fichier image.ppm et génère le fichier sepia.ppm. Vous n'avez besoin de comprendre que le fonctionnement de la fonction main, les autres fonctions s'occupent de divers traitements mais ne sont pas votre préoccupation.
+ 
+La fonction calcul s'occupe de calculer un pixel indépendant de notre image.
+Elle reçoit:
+•        image: l'image d'origine
+•        out_image: l'image de sortie
+•        width: largeur des deux images
+•        height: hauteur des deux images
+•        x: coordonnée x du pixel
+•        y: coordonnée y du pixel
+ 
+Consignes:
+Vous devez transformer le programme sepia.c pour qu'il utilise 4 thread afin d'accélérer la vitesse de traitement. Vous mettrez en place tous les mécanismes d'échanges et de synchronisations que vous jugerez nécessaires à la réalisation de cet objectif.
+Vous ne devez écrire ou modifier du code que dans les sections marquées a cet effet.
+Les deux zones sont délimitées par: /*----- Zone à Modifier -----*/ et /*----- Fin de Zone à Modifier -----*/
+Vous déposerez en annexe le fichier sepia.c que vous aurez produit.
+Attention, il ne doit pas contenir de warning ou d'erreur de compilation.
+ 
+Info utiles:
+convert sepia.ppm sepia.jpg
+Cette commande vous permet de convertir l'image du format ppm au format jpg afin de la visualiser plus facilement
+ 
+Rappel:
+time ./programme
+vous donne 3 temps:
+real: temps d'exécution réel
+user: temps d'exécution en espace utilisateur
+sys: temps d'exécution en espace noyau
+Le temps qui doit changer drastiquement est le temps réel. user et sys seront similaires que l'on soit en mono-thread ou en multi-threads. (le temps de calcul ne change pas, ce qui change c'est le temps réel puisque l'on découpe les calculs en plusieurs threads)
+ sepia.c :
+
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+
+
+int xy_to_index(int x, int y, size_t width)
+{
+    return (y * 3 * width) + (3 * x);
+}
+
+
+char* readline(int fd)
+{
+    int offset = 0;
+    size_t size;
+    char dummy;
+    do {
+        size = read(fd,&dummy,1);
+        offset += size;
+    } while(size != 0 && dummy != '\n' && dummy != EOF);
+
+
+    char* line = malloc(offset * sizeof(char)+1);
+    lseek(fd,-offset,SEEK_CUR);
+    read(fd,line,offset);
+    line[offset]='\0';
+    return line;
+}
+
+
+void load_image(char* filepath, unsigned char** image_data, size_t* width, size_t* height)
+{
+    int fd = open(filepath,O_RDONLY);
+    if (fd == -1)
+    {
+        perror("Can't open input file");
+        exit(-1);
+    }
+    char* line = readline(fd);
+    if ( strncmp("P6", line, 2) != 0)
+    {
+        fputs("Input File is not a ppm file\n", stderr);
+        free(line);
+        exit(-1);
+    }
+    free(line);
+    do {
+        line = readline(fd);
+        if (line[0] == '#')
+        {
+            free(line);
+            continue;
+        }
+        int success = sscanf(line,"%lu %lu",width,height);
+        if (success != 2)
+        {
+            fputs("Input File is not a valid ppm file\n", stderr);
+            free(line);
+            exit(-1);
+        }
+        free(line);
+    } while(*width == 0);
+    int dummy = 0;
+    do {
+        line = readline(fd);
+        if (line[0] == '#')
+        {
+            free(line);
+            continue;
+        }
+        int success = sscanf(line,"%d",&dummy);
+        if (success != 1)
+        {
+            fputs("Input File is not a valid ppm file\n", stderr);
+            free(line);
+            exit(-1);
+        }
+        free(line);
+    } while(dummy == 0);
+
+
+    unsigned data_size = 3 * (*width) * (*height);
+    *image_data = malloc(data_size * sizeof(unsigned char));
+
+
+    read(fd,*image_data,3*(*width)*(*height));
+}
+
+
+void save_image(char* filepath, unsigned char* image, size_t width, size_t height)
+{
+    int fd = open(filepath,O_CREAT|O_WRONLY,0644);
+    if (fd == -1)
+    {
+        perror("Can't open output file");
+        exit(-1);
+    }
+    write(fd,"P6\n",3);
+    char* size = NULL;
+    asprintf(&size,"%lu %lu\n",width, height);
+    write(fd,size,strlen(size));
+    free(size);
+    write(fd,"255\n",4);
+    write(fd,image,3*width*height);
+    write(fd,"\n",1);
+    close(fd);
+
+
+}
+
+
+void calcul(unsigned char* image,unsigned char* out_image, int width, int height, int x, int y)
+{
+    int idx = xy_to_index(x,y,width);
+    int red = image[idx];
+    int green = image[idx+1];
+    int blue = image[idx+2];
+    int new_red = 0;
+    int new_green = 0;
+    int new_blue = 0;
+    for (int i = 0; i <= 1000; i++)
+    {
+        float fact = 393.0f / i;
+        new_red =   fact*red + 0.769*green + 0.189*blue;
+        fact = 686.0f/i;
+        new_green = 0.349*red + fact*green + 0.168*blue;
+        fact = 131.0f/i;
+        new_blue =  0.272*red + 0.534*green + fact*blue;
+    }
+    out_image[idx] = new_red <=  255 ? new_red : 255;
+    out_image[idx+1] = new_green <= 255 ? new_green  : 255;
+    out_image[idx+2] = new_blue <= 255 ? new_blue : 255;
+}
+
+
+/*----- Zone à Modifier -----*/
+
+
+/*----- Fin de Zone à Modifier -----*/
+
+
+int main(void)
+{
+    unsigned char* image = NULL;
+    unsigned char* out_image = NULL;
+    size_t width = 0;
+    size_t height = 0;
+
+
+    //chargement de l'image
+    load_image("image.ppm", &image, &width, &height);
+    //creation d'une image vide de taille identique à l'image d'origine
+    out_image = malloc((width*height*3) * sizeof(unsigned char));
+
+
+    /*----- Zone à Modifier -----*/
+    //calcul de chacun des pixels d'origine pour remplir les pixels de l'image de sortie
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            calcul(image, out_image, width, height, x, y);
+        }
+    }
+    /*----- Fin de Zone à Modifier -----*/
+    //sauvegarde de l'image
+    save_image("sepia.ppm", out_image, width, height);
+    //libération de la mémoire
+    free(image);
+    free(out_image);
+    return 0;
+}
